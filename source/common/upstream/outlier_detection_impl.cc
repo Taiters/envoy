@@ -212,6 +212,9 @@ DetectorConfig::DetectorConfig(const envoy::config::cluster::v3::OutlierDetectio
           static_cast<uint64_t>(PROTOBUF_GET_MS_OR_DEFAULT(config, interval, DEFAULT_INTERVAL_MS))),
       base_ejection_time_ms_(static_cast<uint64_t>(
           PROTOBUF_GET_MS_OR_DEFAULT(config, base_ejection_time, DEFAULT_BASE_EJECTION_TIME_MS))),
+      enable_ejection_reset_(config.enable_ejection_reset()),
+      ejection_reset_time_ms_(static_cast<uint64_t>(
+          PROTOBUF_GET_MS_OR_DEFAULT(config, ejection_reset_time, DEFAULT_EJECTION_RESET_TIME_MS))),
       consecutive_5xx_(static_cast<uint64_t>(
           PROTOBUF_GET_WRAPPED_OR_DEFAULT(config, consecutive_5xx, DEFAULT_CONSECUTIVE_5XX))),
       consecutive_gateway_failure_(static_cast<uint64_t>(PROTOBUF_GET_WRAPPED_OR_DEFAULT(
@@ -455,11 +458,25 @@ void DetectorImpl::ejectHost(HostSharedPtr host,
   // Note this is not currently checked per-priority level, so it is possible
   // for outlier detection to eject all hosts at any given priority level.
   if (ejected_percent < max_ejection_percent) {
+    DetectorHostMonitorImpl* host_monitor = host_monitors_[host];
+
     if (type == envoy::data::cluster::v2alpha::CONSECUTIVE_5XX ||
         type == envoy::data::cluster::v2alpha::SUCCESS_RATE) {
       // Deprecated counter, preserving old behaviour until it's removed.
       stats_.ejections_total_.inc();
     }
+
+    if (config_.enableEjectionReset()) {
+      Envoy::MonotonicTime now = time_source_.monotonicTime();
+      std::chrono::milliseconds eject_reset_time =
+          std::chrono::milliseconds(runtime_.snapshot().getInteger(
+              "outlier_detection.ejection_reset_time_ms", config_.ejectionResetTimeMs()));
+
+      if (now - host_monitor->lastUnejectionTime().value() > eject_reset_time) {
+        host_monitor->resetNumEjections();
+      }
+    }
+
     if (enforceEjection(type)) {
       stats_.ejections_active_.inc();
       updateEnforcedEjectionStats(type);

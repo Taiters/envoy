@@ -124,6 +124,7 @@ TEST_F(OutlierDetectorImplTest, DetectorStaticConfig) {
   const std::string yaml = R"EOF(
 interval: 0.1s
 base_ejection_time: 10s
+ejection_reset_time: 3600s
 consecutive_5xx: 10
 max_ejection_percent: 50
 enforcing_consecutive_5xx: 10
@@ -144,6 +145,7 @@ failure_percentage_threshold: 70
 
   EXPECT_EQ(100UL, detector->config().intervalMs());
   EXPECT_EQ(10000UL, detector->config().baseEjectionTimeMs());
+  EXPECT_EQ(3600000UL, detector->config().ejectionResetTimeMs());
   EXPECT_EQ(10UL, detector->config().consecutive5xx());
   EXPECT_EQ(5UL, detector->config().consecutiveGatewayFailure());
   EXPECT_EQ(50UL, detector->config().maxEjectionPercent());

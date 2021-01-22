@@ -142,6 +142,7 @@ public:
   void eject(MonotonicTime ejection_time);
   void uneject(MonotonicTime ejection_time);
 
+  void resetNumEjections() { num_ejections_ = 0; }
   void resetConsecutive5xx() { consecutive_5xx_ = 0; }
   void resetConsecutiveGatewayFailure() { consecutive_gateway_failure_ = 0; }
   void resetConsecutiveLocalOriginFailure() { consecutive_local_origin_failure_ = 0; }
@@ -249,6 +250,8 @@ public:
 
   uint64_t intervalMs() const { return interval_ms_; }
   uint64_t baseEjectionTimeMs() const { return base_ejection_time_ms_; }
+  bool enableEjectionReset() const { return enable_ejection_reset_; }
+  uint64_t ejectionResetTimeMs() const { return ejection_reset_time_ms_; }
   uint64_t consecutive5xx() const { return consecutive_5xx_; }
   uint64_t consecutiveGatewayFailure() const { return consecutive_gateway_failure_; }
   uint64_t maxEjectionPercent() const { return max_ejection_percent_; }
@@ -277,6 +280,8 @@ public:
 private:
   const uint64_t interval_ms_;
   const uint64_t base_ejection_time_ms_;
+  const bool enable_ejection_reset_;
+  const uint64_t ejection_reset_time_ms_;
   const uint64_t consecutive_5xx_;
   const uint64_t consecutive_gateway_failure_;
   const uint64_t max_ejection_percent_;
@@ -298,6 +303,7 @@ private:
 
   static const uint64_t DEFAULT_INTERVAL_MS = 10000;
   static const uint64_t DEFAULT_BASE_EJECTION_TIME_MS = 30000;
+  static const uint64_t DEFAULT_EJECTION_RESET_TIME_MS = 0;
   static const uint64_t DEFAULT_CONSECUTIVE_5XX = 5;
   static const uint64_t DEFAULT_CONSECUTIVE_GATEWAY_FAILURE = 5;
   static const uint64_t DEFAULT_MAX_EJECTION_PERCENT = 10;
